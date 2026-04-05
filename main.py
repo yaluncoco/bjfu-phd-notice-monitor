@@ -99,14 +99,14 @@ def diff_new_items(old_items, new_items):
     return [i for i in new_items if (i["title"], i["date"], i["link"]) not in old_keys]
 
 
-def send_email(new_items):
+def send_email(new_items, *, subject_prefix="[BJFU博士招生通知]", intro="北京林业大学博士招生通知有更新："):
     smtp_host = os.environ.get("SMTP_HOST", "smtp.163.com")
     smtp_port = int(os.environ.get("SMTP_PORT", "465"))
     smtp_user = os.environ["SMTP_USER"]
     smtp_pass = os.environ["SMTP_PASS"]
     email_to = os.environ["EMAIL_TO"]
 
-    lines = ["北京林业大学博士招生通知有更新：", ""]
+    lines = [intro, ""]
     for item in new_items:
         lines.append(f"- {item['date']} | {item['title']}")
         lines.append(f"  {item['link']}")
@@ -114,7 +114,7 @@ def send_email(new_items):
     lines.append(f"来源：{URL}")
     body = "\n".join(lines)
 
-    subject = f"[BJFU博士招生通知] 新增 {len(new_items)} 条"
+    subject = f"{subject_prefix} 新增 {len(new_items)} 条"
     msg = MIMEText(body, _charset="utf-8")
     msg["Subject"] = subject
     msg["From"] = smtp_user
@@ -135,12 +135,21 @@ def main():
     state = load_state()
     old_items = state.get("items", [])
     new_items = diff_new_items(old_items, latest_items)
+    force_test_email = os.environ.get("FORCE_TEST_EMAIL", "").lower() in {"1", "true", "yes", "on"}
 
-    print(f"parsed={len(latest_items)} old={len(old_items)} new={len(new_items)}")
+    print(f"parsed={len(latest_items)} old={len(old_items)} new={len(new_items)} test={force_test_email}")
     for item in new_items[:10]:
         print(f"NEW {item['date']} {item['title']} -> {item['link']}")
 
-    if old_items and new_items:
+    if force_test_email:
+        sample_items = new_items[:3] if new_items else latest_items[:3]
+        send_email(
+            sample_items,
+            subject_prefix="[BJFU博士招生通知-测试邮件]",
+            intro="这是一封测试邮件，用于验证 GitHub Actions 与 163 SMTP 发信配置是否正常。",
+        )
+        print("已发送测试邮件")
+    elif old_items and new_items:
         send_email(new_items)
         print("已发送邮件通知")
     elif not old_items:

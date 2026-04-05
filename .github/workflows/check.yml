@@ -4,6 +4,11 @@ on:
   schedule:
     - cron: '0 */2 * * *'
   workflow_dispatch:
+    inputs:
+      force_test_email:
+        description: 'Send a test email immediately'
+        required: false
+        default: 'false'
 
 permissions:
   contents: write
@@ -32,6 +37,7 @@ jobs:
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_PASS: ${{ secrets.SMTP_PASS }}
           EMAIL_TO: ${{ secrets.EMAIL_TO }}
+          FORCE_TEST_EMAIL: ${{ github.event.inputs.force_test_email || 'false' }}
         run: python main.py
 
       - name: Commit updated state
