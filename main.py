@@ -11,7 +11,7 @@ from urllib.parse import urljoin
 
 import requests
 
-URL = "https://graduate.bjfu.edu.cn/zsgl/bszs/index.html"
+URL = "http://it.bjfu.edu.cn/yjsgz/yjszs/zsgg/index.html"
 STATE_FILE = Path("state.json")
 TIMEOUT = 30
 HEADERS = {
@@ -26,8 +26,10 @@ HEADERS = {
 }
 LINK_RE = re.compile(r'<a\b[^>]*href=["\']([^"\']+)["\'][^>]*>(.*?)</a>', re.I | re.S)
 DATE_RE = re.compile(r"\b(20\d{2}-\d{2}-\d{2})\b")
+LI_RE = re.compile(r'<li\b[^>]*>(.*?)</li>', re.I | re.S)
+REL_ARTICLE_RE = re.compile(r'^[a-f0-9]{32}\.html$', re.I)
 KEYWORDS = [
-    "英语水平测试",
+    "博士研究生招生考核细则",
 ]
 
 
@@ -48,21 +50,27 @@ def clean_html_text(raw: str) -> str:
 def parse_items(html: str):
     items = []
     seen = set()
-    for href, inner in LINK_RE.findall(html):
-        text = clean_html_text(inner)
-        if not text:
-            continue
-        full_text = text
-        date_match = DATE_RE.search(full_text)
+
+    for li in LI_RE.findall(html):
+        date_match = DATE_RE.search(li)
         if not date_match:
             continue
         date = date_match.group(1)
-        title = full_text.replace(date, "").strip(" -–—|[]【】")
+
+        link_match = LINK_RE.search(li)
+        if not link_match:
+            continue
+        href, inner = link_match.groups()
+        title = clean_html_text(inner).strip(" -–—|[]【】")
         if not title:
             continue
-        link = urljoin(URL, unescape(href))
-        if "/zsgl/bszs/" not in link or link.endswith("/index.html") or link.endswith("/index1.html"):
+
+        href = unescape(href).strip()
+        filename = href.rsplit('/', 1)[-1]
+        if not REL_ARTICLE_RE.match(filename):
             continue
+
+        link = urljoin(URL, href)
         key = (title, date, link)
         if key in seen:
             continue

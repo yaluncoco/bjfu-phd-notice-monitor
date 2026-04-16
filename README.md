@@ -1,14 +1,14 @@
 # BJFU PhD Notice Monitor
 
-监控北京林业大学研究生院博士招生通知页：
-- 页面：<https://graduate.bjfu.edu.cn/zsgl/bszs/index.html>
+监控北京林业大学信息学院研究生招生公告页：
+- 页面：<http://it.bjfu.edu.cn/yjsgz/yjszs/zsgg/index.html>
 - 运行方式：GitHub Actions
 - 频率：每 12 小时一次
 - 通知方式：163 SMTP 邮件
 
 ## 功能
 
-- 抓取博士招生通知列表
+- 抓取目标招生公告列表
 - 提取标题、日期、链接
 - 与 `state.json` 对比，发现新增通知
 - 有新增时发送邮件
